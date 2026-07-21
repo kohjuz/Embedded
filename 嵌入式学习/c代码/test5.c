@@ -1,11 +1,32 @@
 #include<stdio.h>
-struct smart_home sh = {0};
-sh.fan   = 0;  
-sh.light = 6;  
-sh.temp  = 26; 
-void main()
+
+int main(int argc,char **argv)
 {
+    int len,count=0;
+    int arr[len];
+    printf("输入数组长度和移动次数（输入格式:a,b）");
+    scanf("%d,%d",&len,&count);
+    for(int i=0;i<len;i++)
+    {
+        arr[i]=i+1;
+
+    }
+       
+        int n=len-count;
+        
+        while(n<len)
+        {
+            
+            printf("%d ",*(arr+n));
+            ++n;
+        }
+        
+        for(int j=0;j<(len-count);j++)
+        {
+            printf("%d ",arr[j]);
+        }
 
 
-printf("%ld\n", *(long *)(&sh));
+
+
 }
