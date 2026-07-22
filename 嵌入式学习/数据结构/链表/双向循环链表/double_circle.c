@@ -50,23 +50,47 @@ void show(LNode *head)
     {
         printf("%d ",p->data);
     }
+    printf("\n");
 }
-// void odd_int(LNode *head)
-// {
-//     LNode *s=head->next;
-//     while((head->next->data)%2!=0)
-//     {
+void odd_int(LNode *head)
+{
+    LNode *s=head->next;
+    while(s!=head)
+    {
+        if((s->data)%2!=0)
+        {
+            // s->next=s->next->next;
+            printf("%d ",s->data);
+            
+            
+        }
+        s=s->next;
+
         
-//         s->next=s->next->next;
-//         s=s->next->next;
-//         printf("%d",s->data);
-//         head=head->next;
+    }
+
+}
+void even_int(LNode *head)
+{
+    LNode *s=head->next;
+    while(s!=head)
+    {
+        if((s->data)%2==0)
+        {
+            // s->next=s->next->next;
+            printf("%d ",s->data);
+            
+            
+        }
+        s=s->next;
+
         
-//     }
-// }
+    }
+    
+}
 
 
-
+int len=0;
 
 int main(int argc,char **argv)
 {
@@ -80,14 +104,17 @@ int main(int argc,char **argv)
         perror("初始化失败");
         return -1;
     }
+    printf("请输入自然数:");
+    scanf("%d",&len);
     
-    for(int i=1;i<=9;i++)
+    for(int i=1;i<=len;i++)
     {
         LNode * new=new_node(i);
         init_list(head,new);
     }
     show(head);
-    // odd_int(head);
+    odd_int(head);
+    even_int(head);
 
     return 0;
 }
