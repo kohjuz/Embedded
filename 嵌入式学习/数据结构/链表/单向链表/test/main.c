@@ -19,7 +19,7 @@ int main(void)
         LNode *new =new_node(i);
 
         
-        add_node_(head,new);
+        add_node_tail(head,new);
     }
     show(head);
     show_tail(head);
