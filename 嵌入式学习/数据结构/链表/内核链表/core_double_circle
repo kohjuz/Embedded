@@ -2,9 +2,16 @@
 
 #include "kernel_list.h"
 
-int main(int argc,char **argv)
+typedef struct list_data
 {
     
+    
+};
+
+
+int main(int argc,char **argv)
+{
+
 
 
 
