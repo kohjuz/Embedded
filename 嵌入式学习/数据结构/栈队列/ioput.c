@@ -74,8 +74,6 @@ int main(int argc, char *argv[])
     while(!isEmpty())
     {
         printf("%c",hex_pop(pop()));
-        top--;
-
 
     }
 
