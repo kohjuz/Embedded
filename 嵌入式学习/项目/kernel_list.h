@@ -37,7 +37,6 @@
 #define LIST_POISON1  ((void *) 0x00100100)
 #define LIST_POISON2  ((void *) 0x00200)
 
-// 标准内核链表：只包含链表逻辑，无任何数据
 struct list_head
 {
 	struct list_head *prev;
@@ -222,7 +221,6 @@ INIT_LIST_HEAD(list);
 * @pos:    the &struct list_head to use as a loop counter.
 * @head:    the head for your list.
 */
-// 内联函数、宏：都是为了提高程序运行效率
 #define list_for_each(pos, head) \
 for (pos = (head)->next; pos != (head); \
 pos = pos->next)

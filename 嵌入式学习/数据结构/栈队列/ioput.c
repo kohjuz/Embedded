@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #define MAX 100
 int stake[MAX];
 int top = -1;
@@ -17,8 +16,9 @@ int pop()
 {
     if(top>=0)
     {
-        return stake[top];
+        int n = stake[top];
         top--;
+        return n;
     }
     return -1;
 }
@@ -39,7 +39,6 @@ char hex_pop(int n)
     
     
 }
-
 int n;
 int main(int argc, char *argv[])
 {
@@ -76,15 +75,5 @@ int main(int argc, char *argv[])
         printf("%c",hex_pop(pop()));
 
     }
-
-
-
-
-    
-
-
-
-
-
     return 0;
 }

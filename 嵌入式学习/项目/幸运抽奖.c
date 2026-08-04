@@ -34,6 +34,7 @@ int main(int argc,char *argv[])
         while(getchar()=='\n');
         return 1;
     }
+    
     char buf[150];
     int buf_number=0;
     char name[150][50];

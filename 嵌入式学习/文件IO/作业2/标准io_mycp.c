@@ -49,37 +49,64 @@ int main(int argc, char *argv[])
 
     //每行读取, fgets(),gets();
     //每行写 ，fputs();
+
+    /*
+    用读取每一行，写入每一行
     char *buf=malloc(1024);
     while(1)
     {   
-        fgets(buf,1024,fp);
-        if(strcmp(buf,"\n")==0)
+        
+        if(fgets(buf,1024,fp)==NULL)
         {
-
+            if(feof(fp))
+            {
+                break;
+            }
             if(ferror(fp))
             {
                 perror("读取文件失败");
                 break;
             }
-
-            break;
         }
-
+        
         fputs(buf,fp2);
-        fputs("\n",fp2);
-        memset(buf,0,1024);
-        continue;
 
         
     }
-    fclose(fp);
-    fclose(fp2);
-    free(buf);
-    buf=NULL;
-    fp2=NULL;
-    fp=NULL;
+
     printf("复制完成\n");
 
+*/
+
+// 用fread()和fwrite()复制文件
+
+char buf[20*5];
+int nread,begin,end;
+
+while(1)
+{
+    begin=ftell(fp);
+    nread=fread(buf,20,5,fp);
+    if(nread<5)
+    {
+
+        if(feof(fp))
+        {
+            end=ftell(fp);
+            fwrite(buf,end-begin,1,fp2);
+            break;
+        }
+        if(ferror(fp))
+        {
+            perror("读取文件失败");
+            break;
+        }
+    }
+    fwrite(buf,20,nread,fp2);
+
+
+
+}
 
 
 
