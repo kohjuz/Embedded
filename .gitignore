@@ -1,3 +1,4 @@
 ﻿*.exe
 *.obj
 .vscode/
+.bak_project/
