@@ -1,0 +1,109 @@
+# =====================================================================
+# Makefile.arm — 交叉编译 + 一键部署到开发板
+#
+# 场景: 平时你要手敲
+#   aarch64-linux-gnu-gcc showjpg.c jpeg_display.c \
+#       -I ~/jpeg-9d/build/include -L ~/jpeg-9d/build/lib -o showjpg -ljpeg
+#   scp ... (还要输密码)
+# 现在: 一条命令全部搞定, 库也自动发过去并软链接
+#
+# 用法:
+#   make -f Makefile.arm                    # 编译 arm 版 3 个库 + 默认程序(photo_demo)
+#   make -f Makefile.arm app APP=my.c       # 编译你自己写的程序(用 picture_show.h)
+#   make -f Makefile.arm deploy             # 全流程: 编译 + scp 到板子 + 自动软链接
+#   make -f Makefile.arm clean
+#
+# 常用:
+#   make -f Makefile.arm deploy                         # 相册程序
+#   make -f Makefile.arm deploy APP=show_demo.c         # 换成图片浏览器
+#   make -f Makefile.arm deploy APP=../../xxx/photo.c   # 你自己的程序
+#
+# 部署后板子上会得到 (/root 下):
+#   photo_demo, libpicture_io.so, liblcd_io.so,
+#   libpicture_show.so, libjpeg.so.9.4.0
+#   并自动软链接到 /usr/lib, 直接 ./photo_demo 就能跑
+# =====================================================================
+
+CC     = aarch64-linux-gnu-gcc
+CFLAGS = -Wall -O2 -fPIC
+
+# ---------- libjpeg (交叉编译版, 你机器上已构建好的) ----------
+JPEG_DIR = $(HOME)/jpeg-9d/build
+JPEG_INC = -I $(JPEG_DIR)/include
+JPEG_LIB = -L $(JPEG_DIR)/lib -ljpeg
+
+# ---------- 开发板信息 (按需改) ----------
+BOARD  = root@192.168.53.26
+PASS   = 123
+REMOTE = /root
+# 自动输密码需要 sshpass: sudo apt install sshpass
+SSH = sshpass -p $(PASS) ssh -o StrictHostKeyChecking=no
+SCP = sshpass -p $(PASS) scp -o StrictHostKeyChecking=no
+
+# ---------- 输出目录: arm 版单独放, 不覆盖 x86 版 ----------
+OUT    = arm
+LIB_IO  = $(OUT)/libpicture_io.so
+LIB_LCD = $(OUT)/liblcd_io.so
+LIB_PIC = $(OUT)/libpicture_show.so
+LJPEG   = $(OUT)/libjpeg.so.9.4.0
+
+# 用户程序源文件 (默认 photo_demo.c 相册程序; 可用 APP=xxx.c 换)
+APP_SRC ?= photo_demo.c
+APP      = $(OUT)/$(basename $(notdir $(APP_SRC)))
+
+# 程序在板子上从 /root 找库 (软链接失败也能跑)
+RPATH = -Wl,-rpath,$(REMOTE)
+
+.PHONY: all libs app deploy clean
+
+all: libs app
+
+# ================= 1. 交叉编译 3 个库 + libjpeg =================
+libs: $(LIB_IO) $(LIB_LCD) $(LIB_PIC) $(LJPEG)
+
+$(OUT):
+	mkdir -p $@
+
+$(LIB_IO): picture_io.c picture_io.h | $(OUT)
+	$(CC) $(CFLAGS) $(JPEG_INC) -shared -o $@ picture_io.c $(JPEG_LIB) $(RPATH)
+
+$(LIB_LCD): lcd_io.c lcd_io.h | $(OUT)
+	$(CC) $(CFLAGS) -shared -o $@ lcd_io.c $(RPATH)
+
+$(LIB_PIC): picture_show.c picture_show.h $(LIB_LCD) $(LIB_IO)
+	$(CC) $(CFLAGS) -shared -o $@ picture_show.c \
+	    -L$(OUT) -llcd_io -lpicture_io \
+	    -Wl,-rpath-link,$(OUT) $(RPATH)
+
+# 复制 libjpeg 动态库, 并建好 SONAME 软链接(libjpeg.so.9)
+# 这样 arm/ 目录自包含: 链接器依赖查找和板端加载都能直接用它
+$(LJPEG): | $(OUT)
+	cp $(JPEG_DIR)/lib/libjpeg.so.9.4.0 $@
+	ln -sf libjpeg.so.9.4.0 $(OUT)/libjpeg.so.9
+
+# ================= 2. 交叉编译用户程序 (动态链接) =================
+app: libs $(APP)
+
+$(APP): $(APP_SRC) picture_show.h | $(OUT)
+	$(CC) $(CFLAGS) -o $@ $(APP_SRC) \
+	    -L$(OUT) -lpicture_show -llcd_io -lpicture_io \
+	    -Wl,-rpath-link,$(OUT) $(RPATH)
+
+# ================= 3. 部署: scp + 板端软链接 =================
+deploy: libs app
+	@which sshpass >/dev/null 2>&1 || \
+	    { echo "缺少 sshpass, 先安装: sudo apt install sshpass"; exit 1; }
+	@echo ">> 拷贝文件到 $(BOARD):$(REMOTE)/ ..."
+	$(SCP) $(OUT)/*.so* $(APP) $(BOARD):$(REMOTE)/
+	@echo ">> 板端创建软链接 ..."
+	$(SSH) $(BOARD) 'cd $(REMOTE) && \
+	    ln -sf libjpeg.so.9.4.0 libjpeg.so.9 && \
+	    ln -sf /root/libjpeg.so.9.4.0 /usr/lib/libjpeg.so.9 && \
+	    ln -sf /root/liblcd_io.so   /usr/lib/liblcd_io.so && \
+	    ln -sf /root/libpicture_io.so /usr/lib/libpicture_io.so && \
+	    ln -sf /root/libpicture_show.so /usr/lib/libpicture_show.so && \
+	    ldconfig 2>/dev/null; echo "[OK] 部署完成, 板子上直接运行: ./$(notdir $(APP))"'
+
+# ================= 清理 =================
+clean:
+	rm -rf $(OUT)

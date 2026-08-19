@@ -27,16 +27,19 @@ static int copy_recursive(const char *src, const char *dst)
 
 
     // 如果是目录
-    if (S_ISDIR(st.st_mode)) {
+    if (S_ISDIR(st.st_mode))
+    {
         // 1. 检查目标目录是否存在
         struct stat dst_st;
-        if (stat(dst, &dst_st) == -1) {
+        if (stat(dst, &dst_st) == -1) 
+        {
             // 目标不存在，创建
             if (mkdir(dst, 0755) == -1) {
                 perror("mkdir");
                 return -1;
             }
-        } else if (!S_ISDIR(dst_st.st_mode)) {
+        } else if (!S_ISDIR(dst_st.st_mode)) 
+        {
             // 目标存在但不是目录，报错
             fprintf(stderr, "目标已存在但不是目录: %s\n", dst);
             return -1;
@@ -44,21 +47,24 @@ static int copy_recursive(const char *src, const char *dst)
 
         // 2. 打开源目录
         DIR *dp = opendir(src);
-        if (!dp) {
+        if (!dp) 
+        {
             perror("opendir");
             return -1;
         }
 
         struct dirent *ep;
         char sub_src[1024], sub_dst[1024];
-        while ((ep = readdir(dp)) != NULL) {
+        while ((ep = readdir(dp)) != NULL)
+         {
             if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0)
                 continue;
 
             snprintf(sub_src, sizeof(sub_src), "%s/%s", src, ep->d_name);
             snprintf(sub_dst, sizeof(sub_dst), "%s/%s", dst, ep->d_name);
 
-            if (copy_recursive(sub_src, sub_dst) == -1) {
+            if (copy_recursive(sub_src, sub_dst) == -1) 
+            {
                 closedir(dp);
                 return -1;
             }

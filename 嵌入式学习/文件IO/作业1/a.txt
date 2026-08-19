@@ -1,0 +1,10 @@
+total 60
+-rwxrwxrwx 1 dell dell  1186 Jul 29 19:53 1.c
+-rwxrwxrwx 1 dell dell 16128 Aug 11 15:54 a.out
+-rwxrwxrwx 1 dell dell     0 Aug 11 15:54 a.txt
+-r-xr-xr-x 1 dell dell    14 Aug 11 09:59 b.txt
+-rwxrwxrwx 1 dell dell   351 Aug 11 15:54 dup.c
+-rwxrwxrwx 1 dell dell 16144 Aug 11 11:09 lseek
+-rwxrwxrwx 1 dell dell   316 Aug 11 11:30 lseek.c
+-rwxrwxrwx 1 dell dell 16184 Aug 11 09:48 test
+-rwxrwxrwx 1 dell dell  1177 Aug 11 10:09 test1.c

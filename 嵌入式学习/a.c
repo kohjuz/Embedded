@@ -1,24 +1,199 @@
 #include <stdio.h>
-#include <sys/mman.h>
-#include <string.h>
+#include <string.h>     // memset
 #include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+#include <unistd.h>
+#include <math.h>
 
-int main()
+#define W       1024
+#define H       600
+#define PI      3.14159265358979323846
+
+/* ¹úÆì±ê×¼É« ARGB8888 */
+#define FLAG_RED    0xFFDE2910   /* ¹úÆìºì #DE2910 */
+#define STAR_YELLOW 0xFFFFDE00   /* ĞÇ»Æ #FFDE00 */
+
+/* ============ Îå½ÇĞÇÊıÑ§Ä£ĞÍ ============
+ * Îå½ÇĞÇÓĞ 10 ¸ö¶¥µã£º5 ¸öÍâ¶¥µã + 5 ¸öÄÚ¶¥µã£¨°¼µã£©
+ * Íâ¶¥µã°ë¾¶ R£¬ÄÚ¶¥µã°ë¾¶ r ¡Ö R * sin(18¡ã) / sin(54¡ã) ¡Ö R * 0.382
+ * 
+ *        ¢ÙÍâ          ¢İÍâ
+ *         /\          /\
+ *    ¢ÚÄÚ/  \¢ÛÄÚ   ¢ÙÄÚ/  \¢İÄÚ
+ *      /    \        /    \
+ *  ¢ÛÍâ------¡ï------¢İÍâ   (¡ï=Ô²ĞÄ)
+ *      \    /        \    /
+ *    ¢ÜÄÚ\  /¢ÙÄÚ   ¢ÛÄÚ\  /¢ÜÄÚ
+ *         \/          \/
+ *        ¢ÜÍâ          ¢ÚÍâ
+ *
+ * ½Ç¶È¹æÂÉ£ºÍâ¶¥µã´Ó -90¡ã£¨ÕıÉÏ£©¿ªÊ¼Ã¿¸ô 72¡ã Ò»¸ö
+ *          ÄÚ¶¥µã´Ó -90¡ã+36¡ã ¿ªÊ¼Ã¿¸ô 72¡ã Ò»¸ö
+ * ============================================ */
+
+typedef struct {
+    int x, y;
+} Point;
+
+/* ¼ÆËãÎå½ÇĞÇµÄ 10 ¸ö¶¥µã£¨·µ»Ø¶ÑÊı×é£¬µ÷ÓÃÕß¸ºÔğÊ¹ÓÃ£©
+ * cx,cy: ÖĞĞÄ×ø±ê
+ * R:     Íâ½ÓÔ²°ë¾¶
+ * angle: Ğı×ª½Ç¶È£¨»¡¶È£©£¬ÕıÖµÎªË³Ê±Õë¡£ÓÃÓÚÈÃĞ¡ĞÇµÄÒ»½ÇÖ¸Ïò´óĞÇ
+ */
+void calc_star_points(int cx, int cy, int R, double angle_rad, Point pts[10])
 {
-    // æ‰“å¼€æ¶²æ™¶å±æ–‡ä»¶
-    int lcd = open("/dev/fb0", O_RDWR);
+    double r_inner = R * 0.381966;  /* 2*sin(18¡ã)/ (sin(36¡ã)+sin(72¡ã)) µÄ½üËÆ */
+    for (int i = 0; i < 5; i++) {
+        /* Íâ¶¥µã: -90¡ã + i*72¡ã + Ğı×ª */
+        double a_out = angle_rad + (-PI/2.0 + i * 2.0 * PI / 5.0);
+        pts[i * 2].x = cx + (int)(R * cos(a_out));
+        pts[i * 2].y = cy + (int)(R * sin(a_out));
+        
+        /* ÄÚ¶¥µã: -90¡ã+36¡ã + i*72¡ã + Ğı×ª */
+        double a_in  = angle_rad + (-PI/2.0 + PI/5.0 + i * 2.0 * PI / 5.0);
+        pts[i * 2 + 1].x = cx + (int)(r_inner * cos(a_in));
+        pts[i * 2 + 1].y = cy + (int)(r_inner * sin(a_in));
+    }
+}
 
-    // ç»™LCDè®¾å¤‡æ˜ å°„ä¸€å—å†…å­˜ï¼ˆæˆ–ç§°æ˜¾å­˜ï¼‰
-    char *p = mmap(NULL, 1024*600*4, PROT_WRITE,
-                   MAP_SHARED, lcd, 0);
+/* É¨ÃèÏßÌî³ä¶à±ßĞÎ£¨Í¨ÓÃ£¬Ö§³ÖÈÎÒâÍ¹/°¼¶à±ßĞÎ£©
+ * Ëã·¨£º¶ÔÃ¿ÌõÉ¨ÃèÏß y£¬ÇóÓëËùÓĞ±ßµÄ½»µã x£¬ÅÅĞòºóÁ½Á½Åä¶ÔÌî³ä
+ */
+void fill_polygon(unsigned int *fb, Point pts[], int n_pts, unsigned int color)
+{
+    int min_y = pts[0].y, max_y = pts[0].y;
+    for (int i = 1; i < n_pts; i++) {
+        if (pts[i].y < min_y) min_y = pts[i].y;
+        if (pts[i].y > max_y) max_y = pts[i].y;
+    }
+    
+    /* ²Ã¼ôµ½ÆÁÄ»·¶Î§ */
+    if (min_y < 0) min_y = 0;
+    if (max_y >= H) max_y = H - 1;
+    
+    for (int y = min_y; y <= max_y; y++) {
+        int intersections[20];  /* ×î¶à10±ß¡ú20¸ö½»µã */
+        int n_inter = 0;
+        
+        for (int i = 0; i < n_pts; i++) {
+            int j = (i + 1) % n_pts;
+            int y1 = pts[i].y, y2 = pts[j].y;
+            int x1 = pts[i].x, x2 = pts[j].x;
+            
+            /* ¼ì²éÕâÌõ±ßÊÇ·ñ¿çÔ½µ±Ç°É¨ÃèÏß */
+            if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)) {
+                /* ¼ÆËã½»µã x ×ø±ê£¨ÏßĞÔ²åÖµ£© */
+                int inter_x = x1 + (y - y1) * (x2 - x1) / (y2 - y1);
+                if (n_inter < 20)
+                    intersections[n_inter++] = inter_x;
+            }
+        }
+        
+        /* ¶Ô½»µãÅÅĞò£¨¼òµ¥Ã°Åİ£¬ÊıÁ¿ÉÙ¹»ÓÃ£© */
+        for (int i = 0; i < n_inter - 1; i++)
+            for (int j = i + 1; j < n_inter; j++)
+                if (intersections[j] < intersections[i]) {
+                    int tmp = intersections[i];
+                    intersections[i] = intersections[j];
+                    intersections[j] = tmp;
+                }
+        
+        /* Á½Á½Åä¶ÔÌî³äË®Æ½¶Î */
+        for (int i = 0; i + 1 < n_inter; i += 2) {
+            int x_start = intersections[i];
+            int x_end   = intersections[i + 1];
+            if (x_end < 0 || x_start >= W) continue;
+            if (x_start < 0) x_start = 0;
+            if (x_end >= W) x_end = W - 1;
+            
+            for (int x = x_start; x <= x_end; x++)
+                fb[y * W + x] = color;
+        }
+    }
+}
 
-    // é€šè¿‡æ˜ å°„å†…å­˜ï¼Œå°†LCDå±å¹•çš„æ¯ä¸€ä¸ªåƒç´ ç‚¹æ¶‚æˆçº¢è‰²
-    int red = 0x00FF0000;
+/* »­Ò»¿ÅÎå½ÇĞÇµÄ±ã½İº¯Êı */
+void draw_star(unsigned int *fb, int cx, int cy, int R, 
+               double rotate_angle, unsigned int color)
+{
+    Point pts[10];
+    calc_star_points(cx, cy, R, rotate_angle, pts);
+    fill_polygon(fb, pts, 10, color);
+}
 
-    for(int i=0; i<1024*600; i++)
-       memcpy(p+i*4, &red, 4);
-      
-    // è§£é™¤æ˜ å°„
-    munmap(p, 1024*600*4);
+/* ¼ÆËã"ÈÃĞ¡ĞÇÒ»½ÇÖ¸Ïò´óĞÇÖĞĞÄ"ËùĞèµÄĞı×ª½Ç¶È
+ * Ğ¡ĞÇÄ¬ÈÏµÚÒ»¶¥µãÔÚÕıÉÏ·½(-90¡ã)£¬ĞèÒªĞı×ªÊ¹ÆäÖ¸Ïò (target_x, target_y)
+ * ·µ»ØÖµ£º»¡¶È
+ */
+double calc_rotation_to(int star_cx, int star_cy, int target_x, int target_y)
+{
+    return atan2(target_y - star_cy, target_x - star_cx) + PI / 2.0;
+}
+
+int main(void)
+{
+    int fd = open("/dev/fb0", O_RDWR);
+    if (fd < 0) { perror("open /dev/fb0"); return -1; }
+
+    /* »ñÈ¡Êµ¼ÊÆÁÄ»ĞÅÏ¢£¨¿ÉÑ¡£¬µ«ÍÆ¼ö£© */
+    struct fb_var_screeninfo vinfo;
+    ioctl(fd, FBIOGET_VSCREENINFO, &vinfo);
+    printf("fb: %dx%d, bpp=%d\n", vinfo.xres, vinfo.yres, vinfo.bits_per_pixel);
+
+    int size = W * H * 4;
+    unsigned int *fb = mmap(NULL, size, PROT_WRITE, MAP_SHARED, fd, 0);
+    if (fb == MAP_FAILED) { perror("mmap"); close(fd); return -1; }
+
+    /* ===== ÓÅ»¯1: memset ÅúÁ¿ÌîºìÉ«±³¾° ===== */
+    memset(fb, 0x10, size);  /* µÍ×Ö½ÚÖØ¸´ ¡ú ½Ó½üºìÉ« */
+
+    /* µ«Òª¾«È·ÑÕÉ«»¹ÊÇµÃÖğÏñËØ£¨memset Ö»ÄÜÌîµ¥×Ö½ÚÖØ¸´Ä£Ê½£©*/
+    /* ÕÛÖĞ·½°¸£ºÓÃ uint32_t ¿ìËÙÑ­»· */
+    for (int i = 0; i < W * H; i++)
+        fb[i] = FLAG_RED;
+
+    /* ===== ¹úÆì±ê×¼±ÈÀı (GB 12982-2004) =====
+     * ÆìÃæ·ÖÎª 4¡Á4 ¸ñ£º
+     * - ´óĞÇÖĞĞÄÔÚ×ó 1/4¡¢ÉÏ 1/4 Î»ÖÃÆ«×óÉÏÒ»µã
+     * - ´óĞÇÍâ½ÓÔ²Ö±¾¶ = ÆìÃæ¸ß ¡Á 3/10
+     * - Ğ¡ĞÇÍâ½ÓÔ²Ö±¾¶ = ÆìÃæ¸ß ¡Á 1/10
+     * - ËÄ¿ÅĞ¡ĞÇÔÚ´óĞÇÓÒ²à¹°ĞÎ·Ö²¼
+     *
+     * 1024¡Á600 ÏÂµÄ×ø±ê¼ÆËã£º
+     * ´óĞÇ°ë¾¶ R_big  = 600 * 3/10 / 2 = 90
+     * Ğ¡ĞÇ°ë¾¶ R_small = 600 * 1/10 / 2 = 30
+     * ´óĞÇÖĞĞÄ ¡Ö (156, 150)
+     */
+
+    int big_x   = W * 1 / 6;       /* ~170 */
+    int big_y   = H * 1 / 4;       /* ~150 */
+    int R_big   = H * 3 / 20;      /* 90 */
+    int R_small = H * 1 / 20;      /* 30 */
+
+    /* »­´óÎå½ÇĞÇ£¨²»Ğı×ª£¬Ò»¸ö½Ç³¯ÉÏ£© */
+    draw_star(fb, big_x, big_y, R_big, 0, STAR_YELLOW);
+
+    /* ËÄ¿ÅĞ¡ĞÇÎ»ÖÃ£¨Ïà¶Ô´óĞÇÖĞĞÄµÄÆ«ÒÆ£¬°´¹úÆì±ê×¼ÅÅÁĞ£© */
+    struct { int x, y; } small_pos[4] = {
+        { big_x + R_big + R_small + 40, big_y - R_big + 20 },   /* ÓÒÉÏ */
+        { big_x + R_big + R_small + 80, big_y - 10 },             /* ÓÒÖĞÉÏ */
+        { big_x + R_big + R_small + 80, big_y + R_big - 30 },    /* ÓÒÖĞÏÂ */
+        { big_x + R_big + R_small + 40, big_y + R_big + 10 },    /* ÓÒÏÂ */
+    };
+
+    /* »­ËÄ¿ÅĞ¡Îå½ÇĞÇ£¬¸÷ÓĞÒ»½ÇÖ¸Ïò´óĞÇÖĞĞÄ */
+    for (int i = 0; i < 4; i++) {
+        double angle = calc_rotation_to(small_pos[i].x, small_pos[i].y,
+                                        big_x, big_y);
+        draw_star(fb, small_pos[i].x, small_pos[i].y, R_small, 
+                  angle, STAR_YELLOW);
+    }
+
+    munmap(fb, size);
+    close(fd);
+
+    printf("ÖĞ¹ú¹úÆì»æÖÆÍê³É! 1024x600 ARGB8888\n");
     return 0;
 }

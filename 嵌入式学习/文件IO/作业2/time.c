@@ -12,14 +12,13 @@
 int main(int argc, char *argv[])
 {
     int count=0;
-    //行号保存文件
-    FILE *lf = fopen("line", "rb");//只读二进制模式打开文件
+    FILE *lf = fopen("line", "rb");
     if (lf != NULL) 
     {
         fread(&count, sizeof(int), 1, lf);   
         fclose(lf);
     }
-    // 文件不存在 → count 保持 0，下面 ++ 后从 1 开 始
+    // 文件不存在count保持0下面++后从1 开始
 
 
     while(1)
@@ -50,10 +49,6 @@ int main(int argc, char *argv[])
 
         }
         fclose(fp);
-        
-
-
-
         
         fflush(fp);
         sleep(1);

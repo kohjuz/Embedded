@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
         char *t=ctime(&buf.st_ctime);
         t[strlen(t)-1]='\0';
         printf(" %s ",t);
-        printf("\033[1;5;32;40m%s\033[m ",ep->d_name);//ÎÄ¼þÃû
+        printf("\033[1;5;32;40m%s\033[m ",ep->d_name);
         printf("\n");
     }
     closedir(dp);

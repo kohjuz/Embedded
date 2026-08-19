@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     }
     // int ret=0;
     //每字符读取，fgetc();getc();
-    //每字符写， fput();
+    //每字符写， fputc();
     // while(1)
     // {
     //     ret=fgetc(fp);
@@ -81,7 +81,8 @@ int main(int argc, char *argv[])
 // 用fread()和fwrite()复制文件
 
 char buf[20*5];
-int nread,begin,end;
+int nread;
+long begin,end;
 
 while(1)
 {

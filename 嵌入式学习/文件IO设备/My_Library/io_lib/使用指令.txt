@@ -1,0 +1,90 @@
+使用指令
+============================================================
+io_lib 里有 3 个动态库:
+
+  1. libpicture_io.so    图片解码库  BMP/JPG 文件 → RGB24 数据
+  2. liblcd_io.so        LCD显示库   打开/关闭/清屏/把RGB数据画上屏幕
+  3. libpicture_show.so  图片显示库  一行代码显示 BMP/JPG 图片 (核心)
+
+显示任意图片只需要一行:
+
+    #include "picture_show.h"
+
+    photo_display("1.bmp");   // 自动判断 BMP/JPG, 一行搞定
+    photo_display("2.jpg");
+
+============================================================
+一、PC 上编译测试 (x86)
+
+  make              # 编译 3 个库 + 测试 + 演示程序
+  ./show_demo a.jpg # 本机有 /dev/fb0 才能看到画面
+
+============================================================
+二、交叉编译 + 一键部署到开发板 (重点, 代替你手敲命令)
+
+  平时你手动:
+    aarch64-linux-gnu-gcc showjpg.c jpeg_display.c \
+        -I ~/jpeg-9d/build/include -L ~/jpeg-9d/build/lib \
+        -static -o showjpg -ljpeg
+    scp showjpg root@192.168.53.26:/root   # 还要输密码
+
+  现在一条命令:
+    make -f Makefile.arm deploy
+
+  它自动完成:
+    1) aarch64-linux-gnu-gcc 交叉编译 3 个库 (arm/ 目录)
+    2) 交叉编译相册程序 photo_demo.c (触摸翻页, 库版 photo.c)
+    3) 把 库 + libjpeg + 程序 scp 到 root@192.168.53.26:/root
+    4) ssh 到板子自动软链接 /usr/lib, 并 ldconfig
+
+  板子上直接:
+    cd /root && ./photo_demo         # 触摸左滑/右滑翻页
+    ./photo_demo /mnt/sdcard/pic     # 指定图片目录
+
+  编译你自己的程序:
+    make -f Makefile.arm deploy APP=my_program.c
+    make -f Makefile.arm deploy APP=../../Dispaly_projetc/photo.c
+
+  改板子 IP / 密码:
+    make -f Makefile.arm deploy BOARD=root@192.168.1.88 PASS=123456
+
+  前提: 需要 sshpass (自动输密码用)
+    sudo apt install sshpass
+
+  如果没有 sshpass, 手动部署:
+    # 编译(已生成在 arm/)
+    make -f Makefile.arm
+    # 发过去(输一次密码)
+    scp arm/*.so* arm/photo_demo root@192.168.53.26:/root
+    # 板子上软链接(ssh 登录后执行)
+    cd /root
+    ln -sf libjpeg.so.9.4.0 libjpeg.so.9
+    ln -sf /root/libjpeg.so.9.4.0    /usr/lib/libjpeg.so.9
+    ln -sf /root/liblcd_io.so        /usr/lib/liblcd_io.so
+    ln -sf /root/libpicture_io.so    /usr/lib/libpicture_io.so
+    ln -sf /root/libpicture_show.so  /usr/lib/libpicture_show.so
+    ldconfig
+
+  说明: 库自带 RPATH=/root, 即使不软链接, 放在 /root 下也能直接跑。
+
+============================================================
+三、photo.c 迁移说明 (减代码)
+
+  原来的 photo.c (400 多行) 里这些都可以删掉:
+    struct bitmap_header/bitmap_info/rgb_quad  (BMP 头解析)
+    bmp_display() 里的 open/read/行对齐/倒序拷贝 (约120行)
+    jpg2rgb + fb_open/fb_show_image 那些调用     (换库函数)
+
+  用库后相册核心代码就剩: 扫描目录 + 触摸判断 + 一行显示,
+  参考示例 photo_demo.c (约 60 行)。
+
+  等价替换:
+    bmp_display(文件)  → bmp_display(文件)         # 同名, 库提供的
+    jpg 显示整段        → jpg_display(文件)         # 等比缩放铺满屏
+    photo_output(文件)  → photo_display(文件)       # 自动判断格式
+
+============================================================
+四、清理
+
+  make clean            # 删 x86 产物
+  make -f Makefile.arm clean   # 删 arm/ 交叉编译产物
