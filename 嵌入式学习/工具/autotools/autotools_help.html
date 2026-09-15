@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autotools 帮助文档 · cheat sheet</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #F7F6F3; color: #2C2C2A; line-height: 1.7; font-size: 14px;
+    padding: 24px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    background: #EEEDFE; border: 1px solid #AFA9EC; border-radius: 12px;
+    padding: 20px 28px; margin-bottom: 20px;
+  }
+  header h1 { color: #3C3489; font-size: 20px; font-weight: 600; }
+  header p { color: #534AB7; font-size: 13px; margin-top: 4px; }
+  .card {
+    background: #FFFFFF; border: 1px solid #E3E1D8; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 20px;
+  }
+  .card h2 {
+    font-size: 16px; font-weight: 600; color: #26215C;
+    border-left: 4px solid #534AB7; padding-left: 10px; margin-bottom: 12px;
+  }
+  .card h3 { font-size: 14px; font-weight: 600; color: #3C3489; margin: 14px 0 6px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+  th { background: #EEEDFE; color: #3C3489; text-align: left; }
+  th, td { border: 1px solid #E3E1D8; padding: 7px 10px; vertical-align: top; }
+  td code, li code, p code {
+    background: #F1EFE8; border-radius: 4px; padding: 1px 5px;
+    font-family: Consolas, "Courier New", monospace; font-size: 12.5px; color: #26215C;
+  }
+  pre {
+    background: #2C2C2A; color: #E8E6DD; border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.6;
+    font-family: Consolas, "Courier New", monospace; margin: 8px 0;
+  }
+  pre .cm { color: #888780; }
+  pre .kw { color: #7FB4E8; }
+  pre .fn { color: #EFB77B; }
+  pre .str { color: #A5D6A7; }
+  pre .var { color: #E8A2BE; }
+  .tip {
+    background: #FAEEDA; border: 1px solid #EF9F27; border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; color: #633806; margin: 10px 0;
+  }
+  .warn {
+    background: #FAECE7; border: 1px solid #D85A30; border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; color: #712B13; margin: 10px 0;
+  }
+  .en { color: #5F5E5A; font-size: 12px; }
+  .dir { color: #1D9E75; font-weight: 600; }
+  svg text { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  footer { text-align: center; color: #888780; font-size: 12px; padding: 10px 0 30px; }
+  .tag { display: inline-block; background: #E1F5EE; color: #0F6E56; border-radius: 4px;
+         padding: 0 6px; font-size: 12px; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Autotools 帮助文档</h1>
+  <p>一页速查：工具职责 · 完整流程 · configure.ac / Makefile.am 语法 · 排错对照 —— 实战案例为本机 liblife 项目</p>
+</header>
+
+<div class="card">
+  <h2>一、工具链全景图</h2>
+  <svg viewBox="0 0 680 416" width="100%" role="img">
+    <title>autotools 工具链全景图</title>
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="40" y="40" width="240" height="56" rx="8" fill="#E6F1FB" stroke="#378ADD" stroke-width="1"/>
+    <text x="160" y="60" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C" font-family="Consolas,monospace">configure.ac</text>
+    <text x="160" y="80" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">手写的项目说明书</text>
+    <text x="340" y="66" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">autoscan 能扫出</text>
+    <text x="340" y="84" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">configure.ac 初稿</text>
+    <line x1="292" y1="74" x2="282" y2="68" stroke="#B4B2A9" stroke-dasharray="3 3"/>
+    <line x1="160" y1="96" x2="160" y2="134" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="176" y="116" font-size="11" fill="#854F0B" font-family="Consolas,monospace">autoconf</text>
+    <rect x="40" y="140" width="240" height="56" rx="8" fill="#E6F1FB" stroke="#378ADD" stroke-width="1"/>
+    <text x="160" y="160" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C" font-family="Consolas,monospace">configure 脚本</text>
+    <text x="160" y="180" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">自动体检本机环境</text>
+    <rect x="400" y="40" width="240" height="56" rx="8" fill="#E6F1FB" stroke="#378ADD" stroke-width="1"/>
+    <text x="520" y="60" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C" font-family="Consolas,monospace">Makefile.am</text>
+    <text x="520" y="80" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">手写的编译规则</text>
+    <line x1="520" y1="96" x2="520" y2="134" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="536" y="116" font-size="11" fill="#854F0B" font-family="Consolas,monospace">automake</text>
+    <rect x="400" y="140" width="240" height="56" rx="8" fill="#E6F1FB" stroke="#378ADD" stroke-width="1"/>
+    <text x="520" y="160" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#0C447C" font-family="Consolas,monospace">Makefile.in</text>
+    <text x="520" y="180" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#185FA5">留了填空位的模板</text>
+    <line x1="190" y1="196" x2="288" y2="234" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <line x1="490" y1="196" x2="392" y2="234" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="220" y="240" width="240" height="56" rx="8" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1"/>
+    <text x="340" y="260" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#633806" font-family="Consolas,monospace">./configure</text>
+    <text x="340" y="280" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#854F0B">体检 + 往模板里填空</text>
+    <line x1="340" y1="296" x2="340" y2="334" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="356" y="316" font-size="11" fill="#854F0B" font-family="Consolas,monospace">生成</text>
+    <rect x="220" y="340" width="240" height="56" rx="8" fill="#EAF3DE" stroke="#639922" stroke-width="1"/>
+    <text x="340" y="360" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="#27500A" font-family="Consolas,monospace">Makefile</text>
+    <text x="340" y="380" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#3B6D11">make → ./src/main 可执行</text>
+  </svg>
+  <div class="tip">记忆锚点：<code>.ac</code>/<code>.am</code> 是你写的菜谱 → <code>autoreconf -i</code> 变出厨具（configure + Makefile.in）→ <code>./configure</code> 看厨房里有啥 → <code>make</code> 炒菜。</div>
+</div>
+
+<div class="card">
+  <h2>二、七个工具的职责</h2>
+  <table>
+    <tr><th style="width:110px">工具</th><th style="width:170px">名字拆解</th><th>作用</th></tr>
+    <tr><td><code>autoscan</code></td><td>auto(自动) + scan(扫描)</td><td>扫源码生成 <code>configure.scan</code> 初稿，改名后当 configure.ac 用</td></tr>
+    <tr><td><code>aclocal</code></td><td>ac(autoconf) + local(本地)</td><td>收集用到的宏到 <code>aclocal.m4</code>，autoconf 的备料员</td></tr>
+    <tr><td><code>autoconf</code></td><td>auto + conf(igure)</td><td>吃 <code>configure.ac</code>，吐 <code>configure</code> 脚本</td></tr>
+    <tr><td><code>autoheader</code></td><td>auto + header(头文件)</td><td>生成 <code>config.h.in</code>，配合 AC_CONFIG_HEADERS 使用（进阶）</td></tr>
+    <tr><td><code>automake</code></td><td>auto + make</td><td>吃 <code>Makefile.am</code>，吐 <code>Makefile.in</code> 模板</td></tr>
+    <tr><td><code>libtoolize</code></td><td>lib(库) + tool</td><td>抹平各平台建库(.a/.so)差异，做动态库时才需要</td></tr>
+    <tr><td><code>autoreconf</code></td><td>auto + re(再) + conf</td><td><b>一键全家桶</b>：按序跑 aclocal→autoconf→automake，<b>日常只用它</b></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>三、两条日常流程</h2>
+  <h3>场景 A：开发者——从零搭项目</h3>
+<pre><span class="cm"># 安装工具链（注意拼写：automake，带 e！）</span>
+sudo apt install autoconf automake libtool
+
+<span class="cm"># 第一步：扫出 configure.ac 初稿</span>
+autoscan
+mv configure.scan configure.ac
+vim configure.ac            <span class="cm"># 手动补宏，见第四节</span>
+
+<span class="cm"># 第二步：每个目录写 Makefile.am，见第五节</span>
+
+<span class="cm"># 第三步：一键生成 configure（-i 自动补缺失辅助文件）</span>
+autoreconf -i
+
+<span class="cm"># 第四步：生成 Makefile 并编译</span>
+./configure
+make
+./src/main                 <span class="cm"># 跑起来</span></pre>
+
+  <h3>场景 B：用户——拿到别人的源码包</h3>
+<pre>./configure --prefix=/usr/local   <span class="cm"># 指定安装目录</span>
+make                              <span class="cm"># 编译</span>
+sudo make install                 <span class="cm"># 安装</span></pre>
+</div>
+
+<div class="card">
+  <h2>四、configure.ac 常用宏</h2>
+  <p class="en">宏名规律：AC_ = AutoConf 前缀，AM_ = AutoMake 前缀</p>
+  <table>
+    <tr><th style="width:280px">宏</th><th>作用</th></tr>
+    <tr><td><code>AC_INIT([名字], [版本])</code></td><td>项目开篇：项目名 + 版本号，必须有</td></tr>
+    <tr><td><code>AM_INIT_AUTOMAKE([foreign])</code></td><td>启用 automake；<code>foreign</code> = 外来项目模式，<b>免建</b> NEWS/AUTHORS/README/ChangeLog 四个空文件</td></tr>
+    <tr><td><code>AC_PROG_CC</code></td><td>找 C 编译器（写 C++ 用 <code>AC_PROG_CXX</code>）</td></tr>
+    <tr><td><code>AC_PROG_RANLIB</code></td><td>生成静态库(.a)必须加，否则链接报错</td></tr>
+    <tr><td><code>AC_PROG_LIBTOOL</code></td><td>要用 libtool 做动态库(.so)时加</td></tr>
+    <tr><td><code>AC_CONFIG_FILES([...])</code></td><td>声明哪些目录要生成 Makefile</td></tr>
+    <tr><td><code>AC_CONFIG_HEADERS([config.h])</code></td><td>生成 config.h 给代码提供 #define 开关（进阶）</td></tr>
+    <tr><td><code>AC_CHECK_HEADERS([unistd.h])</code></td><td>检测头文件是否存在（进阶）</td></tr>
+    <tr><td><code>AC_OUTPUT</code></td><td>收尾：真正输出所有文件，必须有</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>五、Makefile.am 常用变量</h2>
+  <p class="en">命名铁律：目标名里的 <b>.</b> 和 <b>-</b> 一律换成 <b>_</b>（liblife.a → liblife_a）</p>
+  <table>
+    <tr><th style="width:260px">变量</th><th>作用</th></tr>
+    <tr><td><code>SUBDIRS = lib src</code></td><td>顶层专用：子目录编译顺序。<b>库目录放前面</b>，保证链接前库已存在</td></tr>
+    <tr><td><code>bin_PROGRAMS = main</code></td><td>要生成的可执行程序（装到 bin/ 目录）</td></tr>
+    <tr><td><code>main_SOURCES = main.c</code></td><td>main 的源文件列表</td></tr>
+    <tr><td><code>main_CPPFLAGS = -I...</code></td><td>预处理参数（头文件搜索路径）</td></tr>
+    <tr><td><code>main_LDADD = 路径/liblife.a</code></td><td>链接时附加的库（ADD = 添加进来）</td></tr>
+    <tr><td><code>main_LDFLAGS = -L... -l...</code></td><td>链接器参数</td></tr>
+    <tr><td><code>lib_LIBRARIES = liblife.a</code></td><td>要生成的静态库</td></tr>
+    <tr><td><code>lib_LTLIBRARIES = liblife.la</code></td><td>libtool 库（.la 后缀，可编 .so 动态库）</td></tr>
+    <tr><td><code>include_HEADERS = head.h</code></td><td>随 make install 一起安装的头文件</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>六、./configure 选项 与 make 目标</h2>
+  <h3>./configure 常用选项</h3>
+  <table>
+    <tr><th style="width:230px">选项</th><th>含义</th></tr>
+    <tr><td><code>--prefix=/usr/local</code></td><td>安装根目录（默认 /usr/local）</td></tr>
+    <tr><td><code>CC=arm-linux-gnueabihf-gcc</code></td><td>指定编译器——<b>嵌入式交叉编译就这么干</b></td></tr>
+    <tr><td><code>CFLAGS="-O2 -g"</code></td><td>追加编译选项</td></tr>
+    <tr><td><code>--enable-xxx / --disable-xxx</code></td><td>项目预设的功能开关</td></tr>
+  </table>
+  <h3>make 常用目标</h3>
+  <table>
+    <tr><th style="width:230px">命令</th><th>作用</th></tr>
+    <tr><td><code>make</code></td><td>编译全部</td></tr>
+    <tr><td><code>make install</code></td><td>安装到 prefix 目录</td></tr>
+    <tr><td><code>make clean</code></td><td>删 .o 和可执行文件，保留 configure</td></tr>
+    <tr><td><code>make distclean</code></td><td>clean + 连 Makefile 也删，回到刚解压状态</td></tr>
+    <tr><td><code>make dist</code></td><td>打成 项目名-版本.tar.gz 发布包</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>七、实战样例：liblife 项目（本机可直接抄）</h2>
+  <p>目录结构：<span class="dir">autotools/</span> ├─ configure.ac ├─ Makefile.am ├─ <span class="dir">include/</span>head.h ├─ <span class="dir">lib/</span>haircut.c, havemeal.c, Makefile.am └─ <span class="dir">src/</span>main.c, Makefile.am</p>
+
+  <h3>configure.ac</h3>
+<pre>AC_INIT([life], [1.0])
+AM_INIT_AUTOMAKE([foreign])
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_CONFIG_FILES([Makefile lib/Makefile src/Makefile])
+AC_OUTPUT</pre>
+
+  <h3>顶层 Makefile.am</h3>
+<pre>SUBDIRS = lib src</pre>
+
+  <h3>lib/Makefile.am（做静态库）</h3>
+<pre>lib_LIBRARIES = liblife.a
+liblife_a_SOURCES = haircut.c havemeal.c
+liblife_a_CPPFLAGS = -I../include</pre>
+
+  <h3>src/Makefile.am（做可执行文件）</h3>
+<pre>bin_PROGRAMS = main
+main_SOURCES = main.c
+main_CPPFLAGS = -I$(srcdir)/../include
+main_LDADD = $(top_srcdir)/lib/liblife.a</pre>
+
+  <h3>include/head.h</h3>
+<pre><span class="kw">#ifndef</span> __HEAD_H__
+<span class="kw">#define</span> __HEAD_H__
+
+<span class="kw">void</span> <span class="fn">haircut</span>(<span class="kw">void</span>);
+<span class="kw">void</span> <span class="fn">havemeal</span>(<span class="kw">void</span>);
+
+<span class="kw">#endif</span></pre>
+</div>
+
+<div class="card">
+  <h2>八、常见报错对照表</h2>
+  <table>
+    <tr><th style="width:40%">报错</th><th>原因与解法</th></tr>
+    <tr><td><code>bash: ./configure: No such file or directory</code></td><td>项目缺 <code>configure.ac</code>，或没跑 <code>autoreconf -i</code>。configure 是生成物，<b>不是 apt 装出来的</b></td></tr>
+    <tr><td><code>E: Unable to locate package autmake</code></td><td>拼写错误：应为 <code>automake</code>（掉字母是老毛病了）</td></tr>
+    <tr><td><code>required file './install-sh' not found</code></td><td>缺辅助脚本。跑 <code>autoreconf -i</code> 或 <code>automake --add-missing</code></td></tr>
+    <tr><td><code>ERROR: required files ... NEWS/AUTHORS/README/ChangeLog</code></td><td>没用 foreign 模式。在 configure.ac 加 <code>AM_INIT_AUTOMAKE([foreign])</code></td></tr>
+    <tr><td><code>undefined reference to 'haircut'</code></td><td>链接不到库：检查 <code>main_LDADD</code> 路径、SUBDIRS 里 lib 是否排在 src 前</td></tr>
+    <tr><td><code>Permission denied</code>（跑 configure 时）</td><td>WSL 的 /mnt/d 下执行位丢失：<code>chmod +x configure</code></td></tr>
+    <tr><td><code>ar: command not found</code> 类</td><td>没装编译全家桶：<code>sudo apt install build-essential</code></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>九、嵌入式加分项：交叉编译三件套</h2>
+<pre><span class="cm"># 指定交叉工具链编译，产物在板子上跑</span>
+./configure CC=arm-linux-gnueabihf-gcc \
+            --host=arm-linux-gnueabihf \
+            --prefix=/opt/arm-install
+make
+make install
+<span class="cm"># CC      = 用哪个编译器</span>
+<span class="cm"># --host  = 产物要跑在什么平台上（宿主机目标）</span>
+<span class="cm"># --prefix= 装到哪（避免污染本机 /usr/local）</span></pre>
+  <div class="warn">坑：--host 和 --build 写反是最常见的交叉编译翻车点。--build 是"在哪编"，--host 是"编出来给谁跑"。</div>
+</div>
+
+<footer>b崽 · 2026-08-20 · 配套实战项目：D:\Gitee\cpp\嵌入式学习\工具\autotools</footer>
+</div>
+</body>
+</html>

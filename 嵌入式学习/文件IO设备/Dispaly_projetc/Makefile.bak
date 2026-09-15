@@ -1,0 +1,21 @@
+
+SRC=photo.c jpeg_display.c
+BIN=photo jpeg_display
+
+CC=aarch64-linux-gnu-gcc
+
+
+JPEG_DIR=~/jpeg-9d
+all:$(BIN)
+
+
+1 click touch: %: %.c
+	$(CC) $< -o $@
+	
+2: 2.c jpeg_display.c
+	$(CC) $^ -o $@ -I $(JPEG_DIR)/build/include -L $(JPEG_DIR)/build/lib -ljpeg
+
+clean:
+	rm -f $(BIN)
+
+PHONY:all clean

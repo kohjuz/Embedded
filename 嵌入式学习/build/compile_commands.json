@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/mnt/d/Gitee/cpp/嵌入式学习/build",
+  "command": "/home/dell/rk-tools/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc -Dc_EXPORTS  -g -fPIC -o CMakeFiles/c.dir/c.c.o -c /mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/lib/c.c",
+  "file": "/mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/lib/c.c",
+  "output": "CMakeFiles/c.dir/c.c.o"
+},
+{
+  "directory": "/mnt/d/Gitee/cpp/嵌入式学习/build",
+  "command": "/home/dell/rk-tools/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc   -g -o CMakeFiles/b.dir/b.c.o -c /mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/lib/b.c",
+  "file": "/mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/lib/b.c",
+  "output": "CMakeFiles/b.dir/b.c.o"
+},
+{
+  "directory": "/mnt/d/Gitee/cpp/嵌入式学习/build",
+  "command": "/home/dell/rk-tools/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc -Dd_EXPORTS  -g -fPIC -o CMakeFiles/d.dir/d.c.o -c /mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/lib/d.c",
+  "file": "/mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/lib/d.c",
+  "output": "CMakeFiles/d.dir/d.c.o"
+}
+]

@@ -1,0 +1,2 @@
+/home/dell/rk-tools/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-ar qc libb.a CMakeFiles/b.dir/b.c.o
+/home/dell/rk-tools/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-ranlib libb.a

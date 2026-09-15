@@ -1,0 +1,16 @@
+
+
+cmake_minimum_required(VERSION 3.10)
+project(aarch64_cross C)
+
+set(CMAKE_C_FLAGS "-O -Wl,-rpath=.") #指定c编译器选项
+
+#CMakeLists.txt
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+
+add_subdirectory(lib)
+
+add_executable(main main.c a.c)
+target_link_libraries(main c)
+target_link_libraries(main b)
+target_link_libraries(main d)

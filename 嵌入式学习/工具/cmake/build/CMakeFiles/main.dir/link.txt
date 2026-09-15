@@ -1,0 +1,1 @@
+/usr/bin/gcc -O -Wl,-rpath=. CMakeFiles/main.dir/main.c.o CMakeFiles/main.dir/a.c.o -o main  -Wl,-rpath,/mnt/d/Gitee/cpp/嵌入式学习/工具/cmake/build/lib lib/libc.so lib/libb.a lib/libd.so 

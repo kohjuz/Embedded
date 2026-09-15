@@ -1,0 +1,3 @@
+main-main.o: main.c /usr/include/stdc-predef.h ../include/head.h
+/usr/include/stdc-predef.h:
+../include/head.h:
